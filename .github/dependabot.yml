@@ -1,0 +1,163 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  - package-ecosystem: "" # See documentation for possible values
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+my_project/
+├── app/
+│   ├── __init__.py
+│   ├── routes.py
+│   ├── static/
+│   │   ├── css/
+│   │   ├── js/
+│   │   └── assets/ (الرسومات والفونتات)
+│   └── templates/
+│       └── index.html
+├── config.py
+├── requirements.txt
+└── run.py
+```
+
+### 2. التحديثات الأساسية في app.py
+```python
+from flask import Flask, render_template, session
+from flask_socketio import SocketIO, send
+from flask_bootstrap import Bootstrap
+from flask_moment import Moment
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import random
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_ultra_secure_key_here'
+app.config['BOOTSTRAP_SERVE_LOCAL'] = True  # لتحميل الموارد محلياً
+
+# تهيئة الإضافات
+bootstrap = Bootstrap(app)
+moment = Moment(app)
+socketio = SocketIO(app)
+limiter = Limiter(app=app, key_func=get_remote_address)
+
+# مكتبات الأمان الإضافية
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['REMEMBER_COOKIE_SECURE'] = True
+
+@app.route('/')
+@limiter.limit("10/minute")  # تحديد معدل الطلبات
+def index():
+    session['username'] = "3ABDAZIZ"  # اسم المستخدم الثابت
+    return render_template('index.html', 
+                         username=session['username'],
+                         glitch_effect=random.choice(['red', 'green', 'blue']))
+
+@socketio.on('message')
+def handle_message(msg):
+    print(f'[{session["username"]}]: {msg}')
+    send({'user': session['username'], 'msg': msg}, broadcast=True)
+
+if __name__ == '__main__':
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False)
+```
+
+### 3. تحسين واجهة المستخدم (index.html) 
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    {% extends "bootstrap/base.html" %}
+    {% block title %}Anonymous Joker Interface{% endblock %}
+    
+    {% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/terminal.css') }}">
+    {% endblock %}
+</head>
+
+<body class="cyber-theme">
+    {% block navbar %}
+    <nav class="navbar navbar-inverse navbar-fixed-top glitch-container">
+        <div class="container">
+            <div class="navbar-header">
+                <span class="navbar-brand neon-text">Welcome {{ username }}</span>
+            </div>
+            <div id="hacker-effect" class="glitch-text" data-text="ANONYMOUS MODE: ACTIVATED">
+                ANONYMOUS MODE: ACTIVATED
+            </div>
+        </div>
+    </nav>
+    {% endblock %}
+
+    {% block content %}
+    <div class="container terminal-window">
+        <div id="chat-container" class="terminal-content">
+            <!-- الرسائل تظهر هنا عبر SocketIO -->
+        </div>
+        <div class="input-group">
+            <input type="text" id="msgInput" class="form-control terminal-input" 
+                   placeholder="أدخل الرسالة..." autocomplete="off">
+            <button onclick="sendMessage()" class="btn btn-danger">إرسال</button>
+        </div>
+    </div>
+    {% endblock %}
+
+    {% block scripts %}
+    {{ super() }}
+    {{ moment.include_moment() }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="{{ url_for('static', filename='js/cyber_effects.js') }}"></script>
+    <script>
+        const socket = io();
+        
+        function sendMessage() {
+            const input = document.getElementById('msgInput');
+            socket.emit('message', input.value);
+            input.value = '';
+        }
+
+        socket.on('message', function(data) {
+            const chatDiv = document.getElementById('chat-container');
+            chatDiv.innerHTML += `
+                <div class="message animate__animated animate__fadeInLeft">
+                    <span class="user-label">${data.user}:</span>
+                    <span class="msg-content">${data.msg}</span>
+                </div>`;
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        });
+
+        // تأثيرات دخول الموقع
+        document.addEventListener('DOMContentLoaded', () => {
+            new GLITCH_EFFECT({
+                element: document.getElementById('hacker-effect'),
+                color: '{{ glitch_effect }}'
+            });
+        });
+    </script>
+    {% endblock %}
+</body>
+</html>
+```
+
+### 4. قائمة بأهم المكتبات المطلوبة (requirements.txt) 
+```
+flask==3.0.0
+flask-socketio==5.3.6
+flask-bootstrap==3.3.7.1
+flask-moment==1.0.2
+flask-limiter==3.5.0
+python-dotenv==1.0.0
+gevent==22.10.2
+gevent-websocket==0.10.1
+three==0.0.0
+animate.css==4.1.1
+flask-security==4.0.0
+flask-caching==2.0.2
+flask-admin==1.6.1
+flask-wtf==1.1.1
+flask-sqlalchemy==3.0.5
